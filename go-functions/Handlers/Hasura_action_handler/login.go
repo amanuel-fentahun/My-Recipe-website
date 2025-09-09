@@ -10,13 +10,13 @@ import (
 	"github.com/hasura/go-graphql-client"
 )
 
-type ActionPayload struct {
+type LoginActionPayload struct {
 	SessionVariables map[string]interface{} `json:"session_variables"`
 	Input            map[string]interface{} `json:"input"`
 }
 
 func LoginHandler(c *gin.Context) {
-	var actionPayload ActionPayload
+	var actionPayload LoginActionPayload
 
 	if err := c.ShouldBindJSON(&actionPayload); err != nil {
 		c.JSON(400, gin.H{"error": "Invalid request payload"})

@@ -24,6 +24,11 @@ services:
       CLOUDINARY_CLOUD_NAME: "tafach-kitchen"
       CLOUDINARY_API_KEY: "482643656233765"
       CLOUDINARY_API_SECRET: "ENPlIw_l8bUr6_oq5mNgv13eAs8"
+      SMTP_SENDER: "6186fre@gmail.com"
+      SMTP_PASSWORD: "ddlm euds ecwq dunt"
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: "587"
+
 
 
   graphql-engine:
