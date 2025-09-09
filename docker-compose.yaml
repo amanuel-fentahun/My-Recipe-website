@@ -21,6 +21,7 @@ services:
       JWT_SECRET_KEY: "a-string-secret-at-least-256-bits-long"
       EVENT_SECRET: "my-event-secret"
       HASURA_GRAPHQL_ENDPOINT: "http://graphql-engine:8080/v1/graphql"
+      HASURA_ADMIN_SECRET: mystrongsecret
       CLOUDINARY_CLOUD_NAME: "tafach-kitchen"
       CLOUDINARY_API_KEY: "482643656233765"
       CLOUDINARY_API_SECRET: "ENPlIw_l8bUr6_oq5mNgv13eAs8"

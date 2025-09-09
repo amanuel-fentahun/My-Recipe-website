@@ -3,6 +3,7 @@ package hasuraactionhandler
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	. "go-functions/Utils"
@@ -12,13 +13,18 @@ import (
 	"github.com/hasura/go-graphql-client"
 )
 
-type SignupActionPayload struct {
-	SessionVariables map[string]interface{} `json:"session_variables"`
-	Input            map[string]interface{} `json:"input"`
+type SignupInput struct {
+	FullName  string `json:"fullName"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	AvatarURL string `json:"avatar_url"`
 }
 
-type GraphQLError struct {
-	Message string `json:"message"`
+type SignupActionPayload struct {
+	SessionVariables map[string]interface{} `json:"session_variables"`
+	Input            struct {
+		Inputs SignupInput `json:"inputs"`
+	} `json:"input"`
 }
 
 func SignUpHandler(c *gin.Context) {
@@ -26,35 +32,18 @@ func SignUpHandler(c *gin.Context) {
 	var actionPayload SignupActionPayload
 
 	if err := c.ShouldBindJSON(&actionPayload); err != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid request payload",
 		})
 		return
 	}
+	input := actionPayload.Input.Inputs
 
 	// creating a new request client using go-graphql-client
-	client := graphql.NewClient(os.Getenv("HASURA_GRAPHQL_ENDPOINT"), nil)
-
-	inputs := actionPayload.Input
-
-	credintails, ok := inputs["inputs"].(map[string]interface{})
-	if !ok {
-		c.JSON(400, gin.H{"error": "Invalid credentials format"})
-		return
-	}
-
-	name, ok1 := credintails["fullName"].(string)
-	email, ok2 := credintails["email"].(string)
-	password, ok3 := credintails["password"].(string)
-	avater_url, ok := credintails["avater_url"].(string)
-
-	// try to check if all required fields are present
-	if !ok1 || !ok2 || !ok3 || name == "" || email == "" || password == "" {
-		c.JSON(400, gin.H{
-			"error": "fullName, email and password are required",
+	client := graphql.NewClient(os.Getenv("HASURA_GRAPHQL_ENDPOINT"), nil).
+		WithRequestModifier(func(r *http.Request) {
+			r.Header.Set("x-hasura-admin-secret", os.Getenv("HASURA_ADMIN_SECRET"))
 		})
-		return
-	}
 
 	// GraphQL query for select one user by email
 	var query struct {
@@ -65,31 +54,48 @@ func SignUpHandler(c *gin.Context) {
 		} `graphql:"Users_aggregate(where: {email: {_eq: $email}})"`
 	}
 
-	variables := map[string]interface{}{
-		"email": graphql.String(email),
+	vars := map[string]interface{}{
+		"email": graphql.String(input.Email),
 	}
 
 	// try to fetch user with the given email
-	if err := client.Query(context.Background(), &query, variables); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Failed to check existing user",
-		})
+	if err := client.Query(context.Background(), &query, vars); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to check existing user"})
 		return
 	}
 
 	// check if the user already exists
-	if len(query.UsersAggrigation.Nodes) != 0 {
+	if len(query.UsersAggrigation.Nodes) > 0 {
 		c.JSON(400, gin.H{"error": "User with this email already exists"})
 		return
 	}
 
 	// hash the user password
-	hashed_password, err := HashPassword(password)
+	hashed_password, err := HashPassword(input.Password)
 
 	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Failed to hash password",
-		})
+		c.JSON(500, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	// Graphql mutation for signup
+	var SignupMutation struct {
+		InsertUsersOne struct {
+			ID uuid.UUID `graphql:"id"`
+		} `graphql:"insert_Users_one(object: {name: $name, email: $email, password: $password, avater_url: $avater_url})"`
+	}
+
+	vars2 := map[string]interface{}{
+		"name":       graphql.String(input.FullName),
+		"email":      graphql.String(input.Email),
+		"password":   graphql.String(hashed_password),
+		"isVerified": graphql.Boolean(false),
+		"avater_url": graphql.String(input.AvatarURL),
+	}
+
+	// try to create a new user
+	if err := client.Mutate(context.Background(), &SignupMutation, vars2); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to create user"})
 		return
 	}
 
@@ -103,31 +109,9 @@ func SignUpHandler(c *gin.Context) {
 	body += "<p>If you did not create this account, please ignore this email.</p>"
 	body += "<p>Thanks,<br/>The Tafach Kitchen Team</p>"
 
-	if err := SendEmail(email, subject, body); err != nil {
+	if err := SendEmail(input.Email, subject, body); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Failed to send verification email",
-		})
-		return
-	}
-
-	// Graphql mutation for signup
-	var SignupMutation struct {
-		InsertUsersOne struct {
-			ID uuid.UUID `graphql:"id"`
-		} `graphql:"insert_Users_one(object: {name: $name, email: $email, password: $password, avater_url: $avater_url})"`
-	}
-
-	varaibles2 := map[string]interface{}{
-		"name":       graphql.String(name),
-		"email":      graphql.String(email),
-		"password":   graphql.String(hashed_password),
-		"avater_url": graphql.String(avater_url),
-	}
-
-	// try to create a new user
-	if err := client.Mutate(context.Background(), &SignupMutation, varaibles2); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Failed to create user",
 		})
 		return
 	}
