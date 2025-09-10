@@ -40,9 +40,7 @@ func SignUpHandler(c *gin.Context) {
 	var actionPayload SignupActionPayload
 
 	if err := c.ShouldBindJSON(&actionPayload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request payload",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 	input := actionPayload.Input.Inputs
@@ -103,7 +101,6 @@ func SignUpHandler(c *gin.Context) {
 	// try to create a new user
 	if err := client.Mutate(context.Background(), &SignupMutation, vars2); err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create user"})
-		fmt.Println(err)
 		return
 	}
 
@@ -113,21 +110,17 @@ func SignUpHandler(c *gin.Context) {
 	var VerificationDataMutation struct {
 		InsertVerificationDataOne struct {
 			Email string `graphql:"email"`
-		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, expireAt: $expireAt, type: $type})"`
+		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, type: $type})"`
 	}
 
-	var expireAt = time.Now().Add(15 * time.Minute).Format(time.RFC3339)
-
 	vars3 := map[string]interface{}{
-		"email":    graphql.String(input.Email),
-		"code":     graphql.String(code),
-		"expireAt": graphql.String(expireAt),
-		"type":     graphql.String("email_verification"),
+		"email": graphql.String(input.Email),
+		"code":  graphql.String(code),
+		"type":  graphql.String("email_verification"),
 	}
 
 	if err := client.Mutate(context.Background(), &VerificationDataMutation, vars3); err != nil {
 		c.JSON(500, gin.H{"error": "Failed to store verification data"})
-		fmt.Println(err)
 		return
 	}
 
