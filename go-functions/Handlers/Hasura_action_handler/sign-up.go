@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	. "go-functions/Utils"
 
@@ -18,6 +19,13 @@ type SignupInput struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 	AvatarURL string `json:"avatar_url"`
+}
+
+type VerificationData struct {
+	Email     string    `json:"email"`
+	Code      string    `json:"code"`
+	ExpiresAt time.Time `json:"expiresAt"`
+	Type      string    `json:"type"`
 }
 
 type SignupActionPayload struct {
@@ -82,25 +90,48 @@ func SignUpHandler(c *gin.Context) {
 	var SignupMutation struct {
 		InsertUsersOne struct {
 			ID uuid.UUID `graphql:"id"`
-		} `graphql:"insert_Users_one(object: {name: $name, email: $email, password: $password, avater_url: $avater_url})"`
+		} `graphql:"insert_Users_one(object: {name: $name, email: $email, password: $password, avater_url: $avater_url, isVerified: false})"`
 	}
 
 	vars2 := map[string]interface{}{
 		"name":       graphql.String(input.FullName),
 		"email":      graphql.String(input.Email),
 		"password":   graphql.String(hashed_password),
-		"isVerified": graphql.Boolean(false),
 		"avater_url": graphql.String(input.AvatarURL),
 	}
 
 	// try to create a new user
 	if err := client.Mutate(context.Background(), &SignupMutation, vars2); err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create user"})
+		fmt.Println(err)
+		return
+	}
+
+	code := GenerateRandomString(6)
+
+	// store the verification code in the database for later verification
+	var VerificationDataMutation struct {
+		InsertVerificationDataOne struct {
+			Email string `graphql:"email"`
+		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, expireAt: $expireAt, type: $type})"`
+	}
+
+	var expireAt = time.Now().Add(15 * time.Minute).Format(time.RFC3339)
+
+	vars3 := map[string]interface{}{
+		"email":    graphql.String(input.Email),
+		"code":     graphql.String(code),
+		"expireAt": graphql.String(expireAt),
+		"type":     graphql.String("email_verification"),
+	}
+
+	if err := client.Mutate(context.Background(), &VerificationDataMutation, vars3); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to store verification data"})
+		fmt.Println(err)
 		return
 	}
 
 	//Send A verification Email
-	code := GenerateRandomString(6)
 
 	subject := "Verify your Email"
 	body := "<p> You need to verfiy your email address to continue using your <strong>Tafach Kitchen</strong> account.</p>"
