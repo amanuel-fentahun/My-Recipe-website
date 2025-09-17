@@ -22,10 +22,10 @@ type SignupInput struct {
 }
 
 type VerificationData struct {
-	Email     string    `json:"email"`
-	Code      string    `json:"code"`
-	ExpiresAt time.Time `json:"expiresAt"`
-	Type      string    `json:"type"`
+	Email    string    `json:"email"`
+	Code     string    `json:"code"`
+	ExpireAt time.Time `json:"expireAt"`
+	Type     string    `json:"type"`
 }
 
 type SignupActionPayload struct {
