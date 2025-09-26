@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
-	. "go-functions/Utils"
+	"go-functions/config"
+	"go-functions/internal/auth"
+	"go-functions/internal/mail"
+	"go-functions/internal/random"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -45,12 +47,6 @@ func SignUpHandler(c *gin.Context) {
 	}
 	input := actionPayload.Input.Inputs
 
-	// creating a new request client using go-graphql-client
-	client := graphql.NewClient(os.Getenv("HASURA_GRAPHQL_ENDPOINT"), nil).
-		WithRequestModifier(func(r *http.Request) {
-			r.Header.Set("x-hasura-admin-secret", os.Getenv("HASURA_ADMIN_SECRET"))
-		})
-
 	// GraphQL query for select one user by email
 	var query struct {
 		UsersAggrigation struct {
@@ -65,7 +61,7 @@ func SignUpHandler(c *gin.Context) {
 	}
 
 	// try to fetch user with the given email
-	if err := client.Query(context.Background(), &query, vars); err != nil {
+	if err := config.NewGraphqlClient().Query(context.Background(), &query, vars); err != nil {
 		c.JSON(500, gin.H{"error": "Failed to check existing user"})
 		return
 	}
@@ -77,7 +73,7 @@ func SignUpHandler(c *gin.Context) {
 	}
 
 	// hash the user password
-	hashed_password, err := HashPassword(input.Password)
+	hashed_password, err := auth.HashPassword(input.Password)
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to hash password"})
@@ -99,12 +95,12 @@ func SignUpHandler(c *gin.Context) {
 	}
 
 	// try to create a new user
-	if err := client.Mutate(context.Background(), &SignupMutation, vars2); err != nil {
+	if err := config.NewGraphqlClient().Mutate(context.Background(), &SignupMutation, vars2); err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create user"})
 		return
 	}
 
-	code := GenerateRandomString(6)
+	code := random.GenerateRandomString(6)
 
 	// store the verification code in the database for later verification
 	var VerificationDataMutation struct {
@@ -119,7 +115,7 @@ func SignUpHandler(c *gin.Context) {
 		"type":  graphql.String("email_verification"),
 	}
 
-	if err := client.Mutate(context.Background(), &VerificationDataMutation, vars3); err != nil {
+	if err := config.NewGraphqlClient().Mutate(context.Background(), &VerificationDataMutation, vars3); err != nil {
 		c.JSON(500, gin.H{"error": "Failed to store verification data"})
 		return
 	}
@@ -133,7 +129,7 @@ func SignUpHandler(c *gin.Context) {
 	body += "<p>If you did not create this account, please ignore this email.</p>"
 	body += "<p>Thanks,<br/>The Tafach Kitchen Team</p>"
 
-	if err := SendEmail(input.Email, subject, body); err != nil {
+	if err := mail.SendEmail(input.Email, subject, body); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Failed to send verification email",
 		})

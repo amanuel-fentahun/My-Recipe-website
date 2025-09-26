@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
+
+	"go-functions/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hasura/go-graphql-client"
@@ -24,11 +25,6 @@ func VerifyEmailHandler(c *gin.Context) {
 	email := c.MustGet("email").(string)
 	code := c.MustGet("code").(string)
 
-	client := graphql.NewClient(os.Getenv("HASURA_GRAPHQL_ENDPOINT"), nil).
-		WithRequestModifier(func(r *http.Request) {
-			r.Header.Set("x-hasura-admin-secret", os.Getenv("HASURA_ADMIN_SECRET"))
-		})
-
 	var query struct {
 		VerificationData `graphql:"VerificationData_by_pk(email: $email)"`
 	}
@@ -37,7 +33,7 @@ func VerifyEmailHandler(c *gin.Context) {
 		"email": email,
 	}
 
-	if err := client.Query(context.Background(), &query, vars); err != nil {
+	if err := config.NewGraphqlClient().Query(context.Background(), &query, vars); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch verification data"})
 		fmt.Println(err)
 		return
@@ -74,7 +70,7 @@ func VerifyEmailHandler(c *gin.Context) {
 			"email": graphql.String(email),
 		}
 
-		if err := client.Mutate(context.Background(), &Mutation, vars2); err != nil {
+		if err := config.NewGraphqlClient().Mutate(context.Background(), &Mutation, vars2); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong. Please try again later!"})
 			return
 		}
@@ -85,7 +81,7 @@ func VerifyEmailHandler(c *gin.Context) {
 			return
 		}
 
-		if err := client.Mutate(context.Background(), &Mutation2, vars2); err != nil {
+		if err := config.NewGraphqlClient().Mutate(context.Background(), &Mutation2, vars2); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong. Please try again later!"})
 			return
 		}

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	. "go-functions/Utils"
+	"go-functions/internal/cloud"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +21,7 @@ func CloudinarySignatureHandler(c *gin.Context) {
 		"public_id": "sample_image",
 	}
 
-	signature := GenerateUploadSignature(params, apiSecret)
+	signature := cloud.GenerateUploadSignature(params, apiSecret)
 
 	fmt.Println("Signature: ", signature)
 	fmt.Println("Timestamp: ", timestamp)

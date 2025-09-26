@@ -2,8 +2,9 @@ package hasuraactionhandler
 
 import (
 	"context"
-	. "go-functions/Utils"
-	"os"
+	"go-functions/internal/auth"
+
+	"go-functions/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -57,8 +58,7 @@ func LoginHandler(c *gin.Context) {
 		"email": graphql.String(email),
 	}
 
-	client := graphql.NewClient(os.Getenv("HASURA_GRAPHQL_ENDPOINT"), nil)
-	err := client.Query(context.Background(), &query, variables)
+	err := config.NewGraphqlClient().Query(context.Background(), &query, variables)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to fetch user"})
 		return
@@ -70,14 +70,14 @@ func LoginHandler(c *gin.Context) {
 	}
 	user := query.UsersAggrigation.Nodes[0]
 
-	match := CheckPasswordHash(password, user.Password)
+	match := auth.CheckPasswordHash(password, user.Password)
 
 	if !match {
 		c.JSON(401, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	token, err := CreateToken(user.Name, user.Email, user.ID, user.AvaterURL)
+	token, err := auth.CreateToken(user.Name, user.Email, user.ID, user.AvaterURL)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create token"})
 		return
