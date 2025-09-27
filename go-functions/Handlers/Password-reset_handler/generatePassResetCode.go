@@ -3,13 +3,13 @@ package passwordresethandler
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"go-functions/config"
 	"go-functions/internal/mail"
 	"go-functions/internal/random"
 
-	"github.com/cloudinary/cloudinary-go/v2/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/hasura/go-graphql-client"
@@ -50,7 +50,7 @@ func GeneratePassResetCode(c *gin.Context) {
 	}
 
 	if err := config.NewGraphqlClient().Query(context.Background(), &query, vars); err != nil {
-		logger.New().Error(err)
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server error. please try again later!"})
 		return
 	}

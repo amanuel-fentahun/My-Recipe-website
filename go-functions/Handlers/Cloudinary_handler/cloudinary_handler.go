@@ -2,6 +2,8 @@ package cloudinaryhandler
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 func CloudinarySignatureHandler(c *gin.Context) {
 	apiSecret := os.Getenv("CLOUDINARY_API_SECRET")
 
+	log.Println("Get here")
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 
 	params := map[string]string{
@@ -23,6 +26,7 @@ func CloudinarySignatureHandler(c *gin.Context) {
 
 	signature := cloud.GenerateUploadSignature(params, apiSecret)
 
-	fmt.Println("Signature: ", signature)
-	fmt.Println("Timestamp: ", timestamp)
+	c.JSON(http.StatusOK, gin.H{
+		"timestamp": timestamp,
+		"signature": signature})
 }

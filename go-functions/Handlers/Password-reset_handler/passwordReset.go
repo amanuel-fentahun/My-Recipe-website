@@ -4,10 +4,10 @@ import (
 	"context"
 	"go-functions/config"
 	"go-functions/internal/auth"
+	"log"
 	"net/http"
 	"time"
 
-	"github.com/cloudinary/cloudinary-go/v2/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/hasura/go-graphql-client"
 )
@@ -35,7 +35,7 @@ func ResetPasswordHandler(c *gin.Context) {
 	var payload ResetPasswordPayload
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		logger.New().Error("unable to decode password reset request json")
+		log.Println("unable to decode password reset request json")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid request payload"})
 		return
 	}
@@ -51,7 +51,7 @@ func ResetPasswordHandler(c *gin.Context) {
 	}
 
 	if err := config.NewGraphqlClient().Query(context.Background(), &query, vars); err != nil {
-		logger.New().Error("unable to retrieve the verification data from db")
+		log.Println("unable to retrieve the verification data from db")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to reset password. Please try again later"})
 		return
 	}
@@ -62,13 +62,13 @@ func ResetPasswordHandler(c *gin.Context) {
 	}
 
 	if query.VerificationData.Code != inputs.SecretCode {
-		logger.New().Error("verification code did not match even after verifying PassReset")
+		log.Println("verification code did not match even after verifying PassReset")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to reset password. Please try again later"})
 		return
 	}
 
 	if inputs.ConfirmNewPassowrd != inputs.NewPassword {
-		logger.New().Error("password and password re-enter did not match")
+		log.Println("password and password re-enter did not match")
 		c.JSON(http.StatusNotAcceptable, gin.H{"error": "password and confirm password are not the same"})
 		return
 	}
@@ -76,7 +76,7 @@ func ResetPasswordHandler(c *gin.Context) {
 	hashed_password, err := auth.HashPassword(inputs.NewPassword)
 
 	if err != nil {
-		logger.New().Error("Failed to hash password")
+		log.Println("Failed to hash password")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to reset password. Please try again later"})
 	}
 
@@ -93,13 +93,13 @@ func ResetPasswordHandler(c *gin.Context) {
 	}
 
 	if err := config.NewGraphqlClient().Mutate(context.Background(), &Mutation, vars2); err != nil {
-		logger.New().Error("unable to update user password in db")
+		log.Println("unable to update user password in db")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to reset password. Please try again later"})
 		return
 	}
 
 	if Mutation.UpdateUsers.Affected_rows == 0 {
-		logger.New().Error("no affected row during the mutation of updating the password")
+		log.Println("no affected row during the mutation of updating the password")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to reset password. Please try again later"})
 		return
 	}
@@ -116,7 +116,7 @@ func ResetPasswordHandler(c *gin.Context) {
 	}
 
 	if err := config.NewGraphqlClient().Mutate(context.Background(), &Mutation2, vars3); err != nil {
-		logger.New().Error("Unable to delete the verification data from db")
+		log.Println("Unable to delete the verification data from db")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong. Please try again later!"})
 		return
 	}
