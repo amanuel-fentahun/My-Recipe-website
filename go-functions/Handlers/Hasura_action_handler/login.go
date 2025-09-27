@@ -35,11 +35,13 @@ func LoginHandler(c *gin.Context) {
 	email, ok := credintails["email"].(string)
 	if !ok {
 		c.JSON(400, gin.H{"error": "Email is required"})
+		return
 	}
 
 	password, ok := credintails["password"].(string)
 	if !ok {
 		c.JSON(400, gin.H{"error": "Password is required"})
+		return
 	}
 
 	var query struct {
