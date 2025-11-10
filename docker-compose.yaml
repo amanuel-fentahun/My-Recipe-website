@@ -6,7 +6,6 @@ services:
       - ./db_data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: postgrespassword
-  
 
   go-backend:
     build:
@@ -29,8 +28,6 @@ services:
       SMTP_PASSWORD: "nhes gfdp cngx xvvo"
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
-
-
 
   graphql-engine:
     image: hasura/graphql-engine:latest
@@ -70,7 +67,7 @@ services:
       QUARKUS_OPENTELEMETRY_ENABLED: "false"
       ## QUARKUS_OPENTELEMETRY_TRACER_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/api/v1/athena/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/api/v1/athena/health" ]
       interval: 5s
       timeout: 10s
       retries: 5

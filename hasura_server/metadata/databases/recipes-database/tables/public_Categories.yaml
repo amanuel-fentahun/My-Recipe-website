@@ -1,0 +1,11 @@
+table:
+  name: Categories
+  schema: public
+array_relationships:
+  - name: Recipes
+    using:
+      foreign_key_constraint_on:
+        column: category_id
+        table:
+          name: Recipes
+          schema: public

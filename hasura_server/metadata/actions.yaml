@@ -1,6 +1,122 @@
-actions: []
+actions:
+  - name: forgotPassword
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/forgot_password'
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: POST
+        query_params: {}
+        template_engine: Kriti
+        version: 2
+    comment: This action handles the forgot password functionality by redirecting to go handler and allow user to start the forgot password function
+  - name: login
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/login'
+      forward_client_headers: true
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: POST
+        query_params: {}
+        template_engine: Kriti
+        version: 2
+  - name: passwordReset
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/password_reset'
+      forward_client_headers: true
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: POST
+        query_params: {}
+        template_engine: Kriti
+        version: 2
+    comment: Password resetting after verification done, which send new password and a secret code to the handler
+  - name: signup
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/signup'
+      forward_client_headers: true
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: POST
+        query_params: {}
+        template_engine: Kriti
+        version: 2
+    permissions:
+      - role: anonymous
+      - role: user
+    comment: This action does a signup or registration functionality for new user.
+  - name: uploadSignature
+    definition:
+      kind: ""
+      handler: '{{ACTION_BASE_URL}}/upload_signature'
+      forward_client_headers: true
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: GET
+        query_params: {}
+        request_headers:
+          add_headers: {}
+          remove_headers:
+            - content-type
+        template_engine: Kriti
+        version: 2
+    comment: This action handle a request comes from client to get the cloudinary upload signature
+  - name: verifyEmail
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/verify_email'
+      forward_client_headers: true
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: POST
+        query_params: {}
+        template_engine: Kriti
+        version: 2
+    comment: To verify a code during email verification or password reset after getting verification code by email
+  - name: verifyPassResetCode
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/verify_pass_reset_code'
+      forward_client_headers: true
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: POST
+        query_params: {}
+        template_engine: Kriti
+        version: 2
 custom_types:
-    enums: []
-    input_objects: []
-    objects: []
-    scalars: []
+  enums: []
+  input_objects:
+    - name: userCredentials
+    - name: Input
+    - name: VerificationData
+    - name: VerificationInput
+    - name: newInputs
+    - name: Input2
+    - name: VerificationInput2
+  objects:
+    - name: Token
+    - name: Output
+    - name: output
+    - name: Response
+    - name: Output2
+    - name: output2
+    - name: response
+  scalars: []

@@ -1,0 +1,108 @@
+type Mutation {
+  forgotPassword(
+    arg1: Input2!
+  ): Output2!
+}
+
+type Mutation {
+  login(
+    credentails: userCredentials!
+  ): Token
+}
+
+type Mutation {
+  passwordReset(
+    inputs: newInputs!
+  ): Response
+}
+
+type Mutation {
+  signup(
+    inputs: Input!
+  ): Output
+}
+
+type Query {
+  uploadSignature: response!
+}
+
+type Mutation {
+  verifyEmail(
+    verCode: VerificationInput!
+  ): output
+}
+
+type Mutation {
+  verifyPassResetCode(
+    verCode: VerificationInput2!
+  ): output2
+}
+
+input userCredentials {
+  email: String!
+  password: String!
+}
+
+input Input {
+  fullName: String!
+  email: String!
+  password: String!
+  avater_url: String
+}
+
+input VerificationData {
+  email: String!
+  code: String!
+}
+
+input VerificationInput {
+  email: String!
+  code: String!
+}
+
+input newInputs {
+  newPassword: String!
+  confirmNewPassowrd: String!
+  email: String!
+  secretCode: String!
+}
+
+input Input2 {
+  email: String!
+}
+
+input VerificationInput2 {
+  email: String!
+  code: String!
+}
+
+type Token {
+  accessToken: String!
+}
+
+type Output {
+  message: String!
+}
+
+type output {
+  message: String!
+}
+
+type Response {
+  message: String!
+}
+
+type Output2 {
+  message: String!
+}
+
+type output2 {
+  message: String!
+  data: String
+}
+
+type response {
+  timestamp: String!
+  signature: String!
+}
+

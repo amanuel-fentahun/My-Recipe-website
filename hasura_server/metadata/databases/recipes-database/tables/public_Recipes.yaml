@@ -1,0 +1,104 @@
+table:
+  name: Recipes
+  schema: public
+object_relationships:
+  - name: Category
+    using:
+      foreign_key_constraint_on: category_id
+  - name: User
+    using:
+      foreign_key_constraint_on: created_id
+array_relationships:
+  - name: Bookmarks
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: Bookmarks
+          schema: public
+  - name: Comments
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: Comments
+          schema: public
+  - name: Ingredients
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: Ingredient
+          schema: public
+  - name: Likes
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: Likes
+          schema: public
+  - name: Ratings
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: Ratings
+          schema: public
+  - name: Recipes_images
+    using:
+      foreign_key_constraint_on:
+        column: recipe_id
+        table:
+          name: Recipes_image
+          schema: public
+insert_permissions:
+  - role: user
+    permission:
+      check: {}
+      set:
+        created_id: x-hasura-User-Id
+      columns:
+        - category_id
+        - description
+        - prep_time_minutes
+        - title
+    comment: ""
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - avg_rating
+        - like_count
+        - prep_time_minutes
+        - description
+        - title
+        - created_at
+        - updated_at
+        - category_id
+        - created_id
+        - id
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - category_id
+        - description
+        - prep_time_minutes
+        - title
+      filter:
+        created_id:
+          _eq: X-Hasura-User-Id
+      check:
+        created_id:
+          _eq: X-Hasura-User-Id
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        created_id:
+          _eq: X-Hasura-User-Id
+    comment: ""

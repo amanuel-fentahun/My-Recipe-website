@@ -1,0 +1,115 @@
+table:
+  name: Users
+  schema: public
+object_relationships:
+  - name: VerificationDatum
+    using:
+      foreign_key_constraint_on:
+        column: email
+        table:
+          name: VerificationData
+          schema: public
+array_relationships:
+  - name: Bookmarks
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: Bookmarks
+          schema: public
+  - name: Comments
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: Comments
+          schema: public
+  - name: Likes
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: Likes
+          schema: public
+  - name: Ratings
+    using:
+      foreign_key_constraint_on:
+        column: user_id
+        table:
+          name: Ratings
+          schema: public
+  - name: Recipes
+    using:
+      foreign_key_constraint_on:
+        column: created_id
+        table:
+          name: Recipes
+          schema: public
+  - name: VerificationData
+    using:
+      foreign_key_constraint_on:
+        column: email
+        table:
+          name: VerificationData
+          schema: public
+insert_permissions:
+  - role: anonymous
+    permission:
+      check: {}
+      columns:
+        - avater_url
+        - email
+        - name
+        - password
+      backend_only: true
+    comment: ""
+select_permissions:
+  - role: anonymous
+    permission:
+      columns:
+        - avater_url
+        - email
+        - id
+        - name
+        - password
+      filter: {}
+      allow_aggregations: true
+    comment: ""
+  - role: user
+    permission:
+      columns:
+        - avater_url
+        - email
+        - name
+        - password
+        - created_at
+        - updated_at
+        - id
+      filter:
+        id:
+          _eq: X-Hasura-User-Id
+      limit: 1
+      allow_aggregations: true
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - avater_url
+        - email
+        - name
+        - password
+      filter:
+        id:
+          _eq: X-Hasura-User-Id
+      check:
+        id:
+          _eq: X-Hasura-User-Id
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        id:
+          _eq: X-Hasura-User-Id
+    comment: ""
