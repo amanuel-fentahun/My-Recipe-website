@@ -1,19 +1,28 @@
 package routes
 
 import (
+	"errors"
 	cloudinaryhandler "go-functions/Handlers/Cloudinary_handler"
 	verifyemail "go-functions/Handlers/Email_verification_handler"
 	hasuraactionhandler "go-functions/Handlers/Hasura_action_handler"
 	passresethandler "go-functions/Handlers/Password-reset_handler"
+	middlewares "go-functions/Middlewares"
 	securitymiddleware "go-functions/Middlewares/security"
+	"go-functions/internal/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetUpRoutes(router *gin.Engine) {
 
+	router.Use(middlewares.CustomRecovery())
+	router.Use(middlewares.GlobalErrorHandler())
 	router.Use(securitymiddleware.ValidateIncomingRequest)
 
+	router.NoRoute(func(c *gin.Context) {
+		err := errors.New("the requested endpoint could not be found")
+		c.Error(response.NewValidationError("Route not found", err))
+	})
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "healthy"})
 	})

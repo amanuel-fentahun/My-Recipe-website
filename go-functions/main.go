@@ -7,8 +7,7 @@ import (
 )
 
 func main() {
-	router := gin.Default()
-	// Set up routes
+	router := gin.New()
 	routes.SetUpRoutes(router)
 	router.Run()
 }
