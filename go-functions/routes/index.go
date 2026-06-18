@@ -7,7 +7,6 @@ import (
 	hasuraactionhandler "go-functions/Handlers/Hasura_action_handler"
 	passresethandler "go-functions/Handlers/Password-reset_handler"
 	middlewares "go-functions/Middlewares"
-	securitymiddleware "go-functions/Middlewares/security"
 	"go-functions/internal/response"
 
 	"github.com/gin-gonic/gin"
@@ -17,12 +16,14 @@ func SetUpRoutes(router *gin.Engine) {
 
 	router.Use(middlewares.CustomRecovery())
 	router.Use(middlewares.GlobalErrorHandler())
-	router.Use(securitymiddleware.ValidateIncomingRequest)
 
+	// Global 404 Route catcher
 	router.NoRoute(func(c *gin.Context) {
 		err := errors.New("the requested endpoint could not be found")
-		c.Error(response.NewValidationError("Route not found", err))
+		_ = c.Error(response.NewValidationError("Route not found", err))
 	})
+
+	// public Endpoints
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "healthy"})
 	})
@@ -31,18 +32,23 @@ func SetUpRoutes(router *gin.Engine) {
 		c.JSON(200, gin.H{"message": "pong"})
 	})
 
-	router.POST("/login", hasuraactionhandler.LoginHandler)
-	router.GET("/upload_signature", cloudinaryhandler.CloudinarySignatureHandler)
-	router.POST("/signup", hasuraactionhandler.SignUpHandler)
-
-	// both API endpoints for password reset verification and email verification
+	// Hasura Protected Group (Requires the Hasura Event Secret Key)
+	hasuraProtected := router.Group("")
+	hasuraProtected.Use(middlewares.ValidateIncomingRequest())
 	{
-		verify := router.Group("")
-		verify.Use(securitymiddleware.ValidateVerificationData)
-		verify.POST("/verify_email", verifyemail.VerifyEmailHandler)
-		verify.POST("/verify_pass_reset_code", passresethandler.VerifyPassResetCode)
+		hasuraProtected.POST("/login", hasuraactionhandler.LoginHandler)
+		hasuraProtected.GET("/upload_signature", cloudinaryhandler.CloudinarySignatureHandler)
+		hasuraProtected.POST("/signup", hasuraactionhandler.SignUpHandler)
+		hasuraProtected.POST("/forgot_password", passresethandler.GeneratePassResetCode)
+		hasuraProtected.POST("/password_reset", passresethandler.ResetPasswordHandler)
+
+		// (Requires BOTH the Hasura Secret AND the Verification Data checked)
+		verificationGroup := hasuraProtected.Group("")
+		verificationGroup.Use(middlewares.ValidateVerificationData())
+		{
+			verificationGroup.POST("/verify_email", verifyemail.VerifyEmailHandler)
+			verificationGroup.POST("/verify_pass_reset_code", passresethandler.VerifyPassResetCode)
+		}
 	}
 
-	router.POST("/forgot_password", passresethandler.GeneratePassResetCode)
-	router.POST("/password_reset", passresethandler.ResetPasswordHandler)
 }

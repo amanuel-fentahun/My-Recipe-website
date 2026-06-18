@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"errors"
+	"go-functions/internal/repository"
 	"go-functions/internal/response"
 	"log"
 	"os"
@@ -15,7 +16,7 @@ type VerificationDataPayload struct {
 		Inputs struct {
 			Email string `json:"email"`
 			Code  string `json:"code"`
-		} `json:"verCode`
+		} `json:"verCode"`
 	} `json:"input"`
 }
 
@@ -25,6 +26,8 @@ type VerificationData struct {
 	ExpireAt time.Time `json:"expireAt"`
 	Type     string    `json:"type"`
 }
+
+var HasuraRepo = repository.NewHasuraRepository()
 
 func ValidateIncomingRequest() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -52,8 +55,7 @@ func ValidateVerificationData() gin.HandlerFunc {
 		var payload VerificationDataPayload
 
 		if err := c.ShouldBindJSON(&payload); err != nil {
-			appErr := response.NewValidationError("Invalid request payload format structure", err)
-			_ = c.Error(appErr)
+			_ = c.Error(response.NewValidationError("Invalid request payload format structure", err))
 			c.Abort()
 			return
 		}
@@ -62,11 +64,24 @@ func ValidateVerificationData() gin.HandlerFunc {
 
 		if len(input.Email) == 0 || len(input.Code) == 0 {
 			err := errors.New("missing email or verification code parameter fields")
-			appErr := response.NewValidationError("Email and Code fields are required", err)
-			_ = c.Error(appErr)
+			_ = c.Error(response.NewValidationError("Email and Code fields are required", err))
 			c.Abort()
 			return
 		}
+
+		data, err := HasuraRepo.FetchVerificationDataByEmail(c.Request.Context(), input.Email)
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.Set("old_code", data.Code)
+		c.Set("expired_at", data.ExpireAt)
+		c.Set("incoming_code", input.Code)
+		c.Set("email", data.Email)
+
+		c.Next()
 
 	}
 }

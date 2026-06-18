@@ -1,8 +1,11 @@
 package response
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type BusinessCode string
@@ -14,6 +17,7 @@ const (
 	CodeCloudinaryError   BusinessCode = "CLOUDINARY_SIGN_FAILED"
 	CodeInvalidInput      BusinessCode = "BAD_REQUEST"
 	CodeInternalError     BusinessCode = "INTERNAL_SERVER_ERROR"
+	CodeSMTPError         BusinessCode = "SMTP_DELIVERY_FAILED"
 )
 
 type AppError struct {
@@ -25,7 +29,7 @@ type AppError struct {
 
 func (e *AppError) Error() string {
 	if e.RawError != nil {
-		return fmt.Sprintf("[%s] %s: $v", e.Code, e.Message, e.RawError)
+		return fmt.Sprintf("[%s] %s: %v", e.Code, e.Message, e.RawError)
 	}
 
 	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
@@ -76,6 +80,43 @@ func NewValidationError(msg string, err error) *AppError {
 		HTTPStatus: http.StatusBadRequest,
 		Code:       CodeInvalidInput,
 		Message:    msg,
+		RawError:   err,
+	}
+}
+
+func NewSMTPMailError(msg string, err error) *AppError {
+	return &AppError{
+		HTTPStatus: http.StatusInternalServerError,
+		Code:       CodeSMTPError,
+		Message:    msg,
+		RawError:   err,
+	}
+}
+
+func MapDBError(err error) *AppError {
+	if errors.Is(err, sql.ErrNoRows) {
+		return &AppError{
+			HTTPStatus: http.StatusNotFound,
+			Code:       CodeInvalidInput,
+			Message:    "The requested resource could not be found",
+			RawError:   err,
+		}
+	}
+
+	errStr := err.Error()
+	if strings.Contains(errStr, "connection refused") || strings.Contains(errStr, "database is closed") {
+		return &AppError{
+			HTTPStatus: http.StatusInternalServerError,
+			Code:       CodeInternalError,
+			Message:    "Our database system is currently unreachable. Please try again later.",
+			RawError:   err,
+		}
+	}
+
+	return &AppError{
+		HTTPStatus: http.StatusInternalServerError,
+		Code:       CodeInternalError,
+		Message:    "An unexpected error occurred while reading from our systems.",
 		RawError:   err,
 	}
 }

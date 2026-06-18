@@ -45,7 +45,7 @@ services:
       HASURA_GRAPHQL_DEV_MODE: "true"
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
       ## uncomment next line to run console offline (i.e load console assets from server instead of CDN)
-      # HASURA_GRAPHQL_CONSOLE_ASSETS_DIR: /srv/console-assets
+      HASURA_GRAPHQL_CONSOLE_ASSETS_DIR: /srv/console-assets
       ACTION_BASE_URL: http://go-backend:8080
       EVENT_SECRET: my-event-secret
       ## uncomment next line to set an admin secret

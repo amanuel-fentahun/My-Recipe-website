@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	"go-functions/internal/response"
 	myError "go-functions/internal/response"
 
 	"github.com/gin-gonic/gin"
@@ -55,7 +54,7 @@ func CustomRecovery() gin.HandlerFunc {
 
 		log.Printf("[PANIC RECOVERED] Critical System Crash: %v", err)
 
-		c.JSON(http.StatusInternalServerError, response.StandardResponse{
+		c.JSON(http.StatusInternalServerError, myError.StandardResponse{
 			Success: false,
 			Message: "A critical internal server error occurred",
 		})
