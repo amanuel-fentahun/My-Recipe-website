@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -51,21 +50,4 @@ func HashPassword(password string) (string, error) {
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
-}
-
-func Verify(actualCode string, providedCode string, expiry time.Time) (bool, error) {
-
-	// check the expiration
-
-	if expiry.UTC().Before(time.Now().UTC()) {
-		return false, errors.New("verification code has expired")
-	}
-
-	// check the code
-	if actualCode != providedCode {
-		return false, errors.New("invalid verification code")
-	}
-
-	return true, nil
-
 }
