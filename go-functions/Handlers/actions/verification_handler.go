@@ -1,16 +1,11 @@
 package actions
 
 import (
-	"go-functions/internal/repository"
 	"go-functions/internal/response"
-	"go-functions/services"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
-
-var HasuraRepo = repository.NewHasuraRepository()
-var verifyService = services.NewVerificationService(HasuraRepo)
 
 func VerifyEmailHandler(c *gin.Context) {
 	expired_at := c.MustGet("expired_at").((time.Time))
