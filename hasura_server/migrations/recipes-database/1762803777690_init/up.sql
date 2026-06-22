@@ -1,4 +1,3 @@
-\restrict OZmLerkVxUTlhfRPQ4Muy3adIDboo6OaRzOCRNOQFnESfYT5X9A2zZ4hnBudaAm
 SET transaction_timeout = 0;
 SET check_function_bodies = false;
 CREATE FUNCTION public.set_current_timestamp_updated_at() RETURNS trigger
@@ -183,4 +182,4 @@ ALTER TABLE ONLY public."Recipes_image"
     ADD CONSTRAINT "Recipes_image_recipe_id_fkey" FOREIGN KEY (recipe_id) REFERENCES public."Recipes"(id) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE ONLY public."VerificationData"
     ADD CONSTRAINT "VerificationData_email_fkey" FOREIGN KEY (email) REFERENCES public."Users"(email) ON UPDATE CASCADE ON DELETE CASCADE;
-\unrestrict OZmLerkVxUTlhfRPQ4Muy3adIDboo6OaRzOCRNOQFnESfYT5X9A2zZ4hnBudaAm
+

@@ -2,6 +2,8 @@ package utils
 
 import (
 	"math/rand"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -17,4 +19,19 @@ func GenerateRandomString(n int) string {
 	}
 
 	return string(result)
+}
+
+func IsValidEmail(email string) bool {
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+
+	cleanEmail := strings.TrimSpace(email)
+	if cleanEmail == "" {
+		return false
+	}
+
+	if len(cleanEmail) > 254 {
+		return false
+	}
+
+	return emailRegex.MatchString(cleanEmail)
 }

@@ -1,7 +1,14 @@
 package services
 
 import (
+	"context"
+	"fmt"
+	utils "go-functions/Utils"
+	"go-functions/internal/mail"
 	"go-functions/internal/repository"
+	"go-functions/internal/response"
+	"log"
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,6 +19,7 @@ import (
 type AuthService struct {
 	repo      *repository.HasuraRepository
 	jwtSecret []byte
+	codeTTL   time.Duration
 }
 
 type UserProfile struct {
@@ -22,10 +30,23 @@ type UserProfile struct {
 	roles     []string
 }
 
-func NewAuthService(repo *repository.HasuraRepository, jwtSecret string) *AuthService {
+func NewAuthService(repo *repository.HasuraRepository, jwtSecret string, codeTTLStr string) *AuthService {
+	duration := 15 * time.Minute
+
+	if codeTTLStr != "" {
+		parsed, err := time.ParseDuration(codeTTLStr)
+		if err != nil {
+			log.Printf("[CONFIG WARNING] Invalid VERIFICATION_CODE_TTL value '%s'. Falling back to 15m. Error: %v", codeTTLStr, err)
+		} else {
+			duration = parsed
+		}
+	}
 	return &AuthService{
 		repo:      repo,
-		jwtSecret: []byte(jwtSecret)}
+		jwtSecret: []byte(jwtSecret),
+		codeTTL:   duration,
+	}
+
 }
 
 func (s *AuthService) CreateToken(userFromDB UserProfile) (string, error) {
@@ -60,4 +81,58 @@ func (s *AuthService) HashPassword(password string) (string, error) {
 func (s *AuthService) CheckPasswordHash(plainPassword, hashPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(plainPassword))
 	return err == nil
+}
+
+func (s *AuthService) InitiatePasswordReset(ctx context.Context, email string) error {
+
+	if !utils.IsValidEmail(email) {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Please provide a valid email address.",
+		}
+	}
+
+	userExists, err := s.repo.CheckIfUserExists(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	if !userExists {
+		log.Printf("[SECURITY] Password reset requested for non-existent email: %s", email)
+		return nil
+	}
+
+	status, _, err := s.repo.CheckVerificationState(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	if status == "ACTIVE_CODE_WAIT" {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadGateway,
+			Code:       response.CodeInvalidInput,
+			Message:    "A reset code is already active. Please wait a moment before asking for another.",
+		}
+	}
+
+	newCode := utils.GenerateRandomString(6)
+	err = s.repo.UpdateOrCreateVerificationRow(ctx, email, newCode, s.codeTTL, "password_reset")
+	if err != nil {
+		return err
+	}
+
+	subject := "Password reset code"
+	body := "<p> You need to insert this code in order to keep resetting your password.</p>"
+	body += "<p>Your password reset code:</p>"
+	body += fmt.Sprintf("<h3>%s</h3>", newCode)
+	body += "<p>If you did not request this password reset code, please ignore this email.</p>"
+	body += "<p>Thanks,<br/>The Tafach Kitchen Team</p>"
+
+	err = mail.SendEmail(email, subject, body)
+	if err != nil {
+		return response.NewSMTPMailError("we could not send your reset instructions. Please try again later.", err)
+	}
+
+	return nil
 }

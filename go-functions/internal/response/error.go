@@ -18,6 +18,7 @@ const (
 	CodeInvalidInput      BusinessCode = "BAD_REQUEST"
 	CodeInternalError     BusinessCode = "INTERNAL_SERVER_ERROR"
 	CodeSMTPError         BusinessCode = "SMTP_DELIVERY_FAILED"
+	CodeDBError           BusinessCode = "DATABASE_ERROR"
 )
 
 type AppError struct {
@@ -97,7 +98,7 @@ func MapDBError(err error) *AppError {
 	if errors.Is(err, sql.ErrNoRows) {
 		return &AppError{
 			HTTPStatus: http.StatusNotFound,
-			Code:       CodeInvalidInput,
+			Code:       CodeDBError,
 			Message:    "The requested resource could not be found",
 			RawError:   err,
 		}
@@ -107,7 +108,7 @@ func MapDBError(err error) *AppError {
 	if strings.Contains(errStr, "connection refused") || strings.Contains(errStr, "database is closed") {
 		return &AppError{
 			HTTPStatus: http.StatusInternalServerError,
-			Code:       CodeInternalError,
+			Code:       CodeDBError,
 			Message:    "Our database system is currently unreachable. Please try again later.",
 			RawError:   err,
 		}
@@ -115,7 +116,7 @@ func MapDBError(err error) *AppError {
 
 	return &AppError{
 		HTTPStatus: http.StatusInternalServerError,
-		Code:       CodeInternalError,
+		Code:       CodeDBError,
 		Message:    "An unexpected error occurred while reading from our systems.",
 		RawError:   err,
 	}
