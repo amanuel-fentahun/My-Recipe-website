@@ -14,6 +14,17 @@ type ForgotPassowrdPayload struct {
 	} `json:"input"`
 }
 
+type ResetPasswordPayload struct {
+	Input struct {
+		Inputs struct {
+			Email              string `json:"email"`
+			NewPassword        string `json:"newPassword"`
+			ConfirmNewPassowrd string `json:"confirmNewPassowrd"`
+			SecretCode         string `json:"secretCode"`
+		} `json:"inputs"`
+	} `json:"input"`
+}
+
 func LoginHandler(c *gin.Context) {
 
 }
@@ -43,5 +54,12 @@ func ForgotPasswordHandler(c *gin.Context) {
 }
 
 func PasswordResetHandler(c *gin.Context) {
+
+	var payload ResetPasswordPayload
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		_ = c.Error(response.NewValidationError("Invalid Password reset input", err))
+		return
+	}
 
 }

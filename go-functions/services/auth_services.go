@@ -110,7 +110,7 @@ func (s *AuthService) InitiatePasswordReset(ctx context.Context, email string) e
 
 	if status == "ACTIVE_CODE_WAIT" {
 		return &response.AppError{
-			HTTPStatus: http.StatusBadGateway,
+			HTTPStatus: http.StatusBadRequest,
 			Code:       response.CodeInvalidInput,
 			Message:    "A reset code is already active. Please wait a moment before asking for another.",
 		}

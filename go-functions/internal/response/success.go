@@ -12,14 +12,46 @@ type StandardResponse struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+// SendOk handles responses and flattens maps automatically to satisfy Hasura
 func SendOk(c *gin.Context, data interface{}) {
+	if data != nil {
+		switch v := data.(type) {
+		case gin.H:
+			// 🌟 If it's a map, merge the success tracking directly into the root level!
+			v["success"] = true
+			c.JSON(http.StatusOK, v)
+			return
+		case map[string]interface{}:
+			v["success"] = true
+			c.JSON(http.StatusOK, v)
+			return
+		}
+	}
+
+	// Default fallback to your exact nested structure for traditional slices/structs
 	c.JSON(http.StatusOK, StandardResponse{
 		Success: true,
 		Data:    data,
 	})
 }
 
+// SendCreated handles successful creations and balances maps flatly
 func SendCreated(c *gin.Context, message string, data interface{}) {
+	if data != nil {
+		switch v := data.(type) {
+		case gin.H:
+			v["success"] = true
+			v["message"] = message
+			c.JSON(http.StatusCreated, v)
+			return
+		case map[string]interface{}:
+			v["success"] = true
+			v["message"] = message
+			c.JSON(http.StatusCreated, v)
+			return
+		}
+	}
+
 	c.JSON(http.StatusCreated, StandardResponse{
 		Success: true,
 		Message: message,
@@ -27,6 +59,7 @@ func SendCreated(c *gin.Context, message string, data interface{}) {
 	})
 }
 
+// SendDeleted remains identical
 func SendDeleted(c *gin.Context, message string) {
 	c.JSON(http.StatusOK, StandardResponse{
 		Success: true,

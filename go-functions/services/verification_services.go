@@ -39,9 +39,9 @@ func (s *VerificationService) VerifyEmail(ctx context.Context, email, old_code, 
 	}
 
 	// update the user table isVerified to true
-	if err := s.repo.MarkEmailVerified(ctx, email); err != nil {
-		return err
-	}
+	// if err := s.repo.MarkEmailVerified(ctx, email); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

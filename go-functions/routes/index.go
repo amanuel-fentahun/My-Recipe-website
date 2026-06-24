@@ -6,7 +6,7 @@ import (
 	// verifyemail "go-functions/Handlers/Email_verification_handler"
 	// hasuraactionhandler "go-functions/Handlers/Hasura_action_handler"
 	//passresethandler "go-functions/Handlers/Password-reset_handler"
-	authhandler "go-functions/Handlers/actions"
+	actionHandler "go-functions/Handlers/actions"
 	middlewares "go-functions/Middlewares"
 	"go-functions/internal/response"
 
@@ -40,14 +40,14 @@ func SetUpRoutes(router *gin.Engine) {
 		// hasuraProtected.POST("/login", hasuraactionhandler.LoginHandler)
 		// hasuraProtected.GET("/upload_signature", cloudinaryhandler.CloudinarySignatureHandler)
 		//hasuraProtected.POST("/signup", hasuraactionhandler.SignUpHandler)
-		hasuraProtected.POST("/forgot_password", authhandler.ForgotPasswordHandler)
+		hasuraProtected.POST("/forgot_password", actionHandler.ForgotPasswordHandler)
 		//hasuraProtected.POST("/password_reset", passresethandler.ResetPasswordHandler)
 
 		// (Requires BOTH the Hasura Secret AND the Verification Data checked)
 		verificationGroup := hasuraProtected.Group("")
 		verificationGroup.Use(middlewares.ValidateVerificationData())
 		{
-			// verificationGroup.POST("/verify_email", verifyemail.VerifyEmailHandler)
+			verificationGroup.POST("/verify_email", actionHandler.VerifyEmailHandler)
 			// verificationGroup.POST("/verify_pass_reset_code", passresethandler.VerifyPassResetCode)
 		}
 	}

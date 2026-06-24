@@ -38,6 +38,12 @@ type VerificationData struct {
 
 type VerificationStatus string
 
+type timestamptz string
+
+func (timestamptz) GetGraphQLType() string {
+	return "timestamptz"
+}
+
 const (
 	StatusNoRowExists VerificationStatus = "NO_ROW"
 	StatusActiveCode  VerificationStatus = "ACTIVE_CODE_WAIT"
@@ -152,7 +158,7 @@ func (r *HasuraRepository) InsertVerificationRow(ctx context.Context, email, cod
 	vars := map[string]interface{}{
 		"email":    graphql.String(email),
 		"code":     graphql.String(code),
-		"expireAt": expireAt.Format(time.RFC3339), // Hasura format requirement
+		"expireAt": timestamptz(expireAt.Format(time.RFC3339)), // Hasura format requirement
 		"type":     graphql.String(actionType),
 	}
 
@@ -175,7 +181,7 @@ func (r *HasuraRepository) UpdateOrCreateVerificationRow(ctx context.Context, em
 	vars := map[string]interface{}{
 		"email":    graphql.String(email),
 		"code":     graphql.String(code),
-		"expireAt": expireAt.Format(time.RFC3339),
+		"expireAt": timestamptz(expireAt.Format(time.RFC3339)),
 		"type":     graphql.String(actionType),
 	}
 
