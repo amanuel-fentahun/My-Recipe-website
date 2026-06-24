@@ -102,7 +102,7 @@ func (r *HasuraRepository) CheckIfUserExists(ctx context.Context, email string) 
 	var query struct {
 		Users []struct {
 			Id uuid.UUID `graphql:"id"`
-		} `graphql:"Users(where: {email: {_eq: $email}}, linit: 1)"`
+		} `graphql:"Users(where: {email: {_eq: $email}}, limit: 1)"`
 	}
 
 	vars := map[string]interface{}{
@@ -152,7 +152,7 @@ func (r *HasuraRepository) InsertVerificationRow(ctx context.Context, email, cod
 	vars := map[string]interface{}{
 		"email":    graphql.String(email),
 		"code":     graphql.String(code),
-		"expireAt": graphql.String(expireAt.Format(time.RFC3339)), // Hasura format requirement
+		"expireAt": expireAt.Format(time.RFC3339), // Hasura format requirement
 		"type":     graphql.String(actionType),
 	}
 
@@ -175,7 +175,7 @@ func (r *HasuraRepository) UpdateOrCreateVerificationRow(ctx context.Context, em
 	vars := map[string]interface{}{
 		"email":    graphql.String(email),
 		"code":     graphql.String(code),
-		"expireAt": graphql.String(expireAt.Format(time.RFC3339)),
+		"expireAt": expireAt.Format(time.RFC3339),
 		"type":     graphql.String(actionType),
 	}
 

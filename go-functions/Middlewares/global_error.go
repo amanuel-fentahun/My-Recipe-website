@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 
 	myError "go-functions/internal/response"
 
@@ -16,6 +17,7 @@ type HasuraErrorPayload struct {
 }
 
 func GlobalErrorHandler() gin.HandlerFunc {
+	logger := log.New(os.Stdout, "", log.LstdFlags)
 	return func(c *gin.Context) {
 		c.Next()
 
@@ -27,7 +29,7 @@ func GlobalErrorHandler() gin.HandlerFunc {
 			if errors.As(lastErr, &appErr) {
 
 				if appErr.RawError != nil {
-					log.Printf("[Error] Code: %s | Message: %s | Internal: %v", appErr.Code, appErr.Message, appErr.RawError)
+					logger.Printf("[BACKEND EXCEPTION LOG] BusinessCode: %s | SafeMessage: %s | RAW SYSTEM ERROR: %v", appErr.Code, appErr.Message, appErr.RawError)
 				}
 
 				c.JSON(appErr.HTTPStatus, HasuraErrorPayload{
@@ -37,7 +39,7 @@ func GlobalErrorHandler() gin.HandlerFunc {
 
 			} else {
 
-				log.Printf("[UNHANDLED ERROR] %v", lastErr)
+				logger.Printf("[UNHANDLED ERROR] %v", lastErr)
 				c.JSON(http.StatusInternalServerError, HasuraErrorPayload{
 					Message: "An unexpected internal server error occurred",
 					Code:    myError.CodeInternalError,
@@ -50,9 +52,10 @@ func GlobalErrorHandler() gin.HandlerFunc {
 }
 
 func CustomRecovery() gin.HandlerFunc {
+	logger := log.New(os.Stdout, "", log.LstdFlags)
 	return gin.CustomRecovery(func(c *gin.Context, err any) {
 
-		log.Printf("[PANIC RECOVERED] Critical System Crash: %v", err)
+		logger.Printf("[PANIC RECOVERED] Critical System Crash: %v", err)
 
 		c.JSON(http.StatusInternalServerError, myError.StandardResponse{
 			Success: false,

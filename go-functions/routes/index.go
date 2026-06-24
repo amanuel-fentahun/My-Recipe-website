@@ -2,10 +2,10 @@ package routes
 
 import (
 	"errors"
-	cloudinaryhandler "go-functions/Handlers/Cloudinary_handler"
-	verifyemail "go-functions/Handlers/Email_verification_handler"
-	hasuraactionhandler "go-functions/Handlers/Hasura_action_handler"
-	passresethandler "go-functions/Handlers/Password-reset_handler"
+	// cloudinaryhandler "go-functions/Handlers/Cloudinary_handler"
+	// verifyemail "go-functions/Handlers/Email_verification_handler"
+	// hasuraactionhandler "go-functions/Handlers/Hasura_action_handler"
+	//passresethandler "go-functions/Handlers/Password-reset_handler"
 	authhandler "go-functions/Handlers/actions"
 	middlewares "go-functions/Middlewares"
 	"go-functions/internal/response"
@@ -37,18 +37,18 @@ func SetUpRoutes(router *gin.Engine) {
 	hasuraProtected := router.Group("")
 	hasuraProtected.Use(middlewares.ValidateIncomingRequest())
 	{
-		hasuraProtected.POST("/login", hasuraactionhandler.LoginHandler)
-		hasuraProtected.GET("/upload_signature", cloudinaryhandler.CloudinarySignatureHandler)
-		hasuraProtected.POST("/signup", hasuraactionhandler.SignUpHandler)
+		// hasuraProtected.POST("/login", hasuraactionhandler.LoginHandler)
+		// hasuraProtected.GET("/upload_signature", cloudinaryhandler.CloudinarySignatureHandler)
+		//hasuraProtected.POST("/signup", hasuraactionhandler.SignUpHandler)
 		hasuraProtected.POST("/forgot_password", authhandler.ForgotPasswordHandler)
-		hasuraProtected.POST("/password_reset", passresethandler.ResetPasswordHandler)
+		//hasuraProtected.POST("/password_reset", passresethandler.ResetPasswordHandler)
 
 		// (Requires BOTH the Hasura Secret AND the Verification Data checked)
 		verificationGroup := hasuraProtected.Group("")
 		verificationGroup.Use(middlewares.ValidateVerificationData())
 		{
-			verificationGroup.POST("/verify_email", verifyemail.VerifyEmailHandler)
-			verificationGroup.POST("/verify_pass_reset_code", passresethandler.VerifyPassResetCode)
+			// verificationGroup.POST("/verify_email", verifyemail.VerifyEmailHandler)
+			// verificationGroup.POST("/verify_pass_reset_code", passresethandler.VerifyPassResetCode)
 		}
 	}
 
