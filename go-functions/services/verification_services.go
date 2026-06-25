@@ -38,10 +38,16 @@ func (s *VerificationService) VerifyEmail(ctx context.Context, email, old_code, 
 		}
 	}
 
+	return nil
+}
+
+func (s *VerificationService) SetEmailVerified(ctx context.Context, email string) error {
+
 	// update the user table isVerified to true
-	// if err := s.repo.MarkEmailVerified(ctx, email); err != nil {
-	// 	return err
-	// }
+	if err := s.repo.MarkEmailVerified(ctx, email); err != nil {
+		return err
+	}
 
 	return nil
+
 }

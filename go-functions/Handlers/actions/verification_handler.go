@@ -18,6 +18,11 @@ func VerifyEmailHandler(c *gin.Context) {
 		return
 	}
 
+	if err := verifyService.SetEmailVerified(c.Request.Context(), email); err != nil {
+		_ = c.Error(err)
+		return
+	}
+
 	response.SendOk(c, gin.H{
 		"status":  "verified",
 		"message": "Your email address has been successfully verified.",

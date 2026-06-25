@@ -29,7 +29,7 @@ func IsValidEmail(email string) bool {
 		return false
 	}
 
-	if len(cleanEmail) > 254 {
+	if len(cleanEmail) > 254 || len(cleanEmail) == 0 {
 		return false
 	}
 

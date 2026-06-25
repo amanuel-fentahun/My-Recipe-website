@@ -41,7 +41,7 @@ func SetUpRoutes(router *gin.Engine) {
 		// hasuraProtected.GET("/upload_signature", cloudinaryhandler.CloudinarySignatureHandler)
 		//hasuraProtected.POST("/signup", hasuraactionhandler.SignUpHandler)
 		hasuraProtected.POST("/forgot_password", actionHandler.ForgotPasswordHandler)
-		//hasuraProtected.POST("/password_reset", passresethandler.ResetPasswordHandler)
+		hasuraProtected.POST("/password_reset", actionHandler.PasswordResetHandler)
 
 		// (Requires BOTH the Hasura Secret AND the Verification Data checked)
 		verificationGroup := hasuraProtected.Group("")

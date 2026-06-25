@@ -62,4 +62,20 @@ func PasswordResetHandler(c *gin.Context) {
 		return
 	}
 
+	inputs := payload.Input.Inputs
+
+	if err := authService.CompletePasswordReset(
+		c.Request.Context(),
+		inputs.Email,
+		inputs.SecretCode,
+		inputs.NewPassword,
+		inputs.ConfirmNewPassowrd,
+	); err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	response.SendOk(c, gin.H{
+		"message": "Your password is resetted seccussfully.",
+	})
 }

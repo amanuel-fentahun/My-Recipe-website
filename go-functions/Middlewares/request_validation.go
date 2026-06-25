@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"errors"
+	utils "go-functions/Utils"
 	"go-functions/internal/repository"
 	"go-functions/internal/response"
 	"log"
@@ -62,9 +63,16 @@ func ValidateVerificationData() gin.HandlerFunc {
 
 		input := payload.Input.Inputs
 
-		if len(input.Email) == 0 || len(input.Code) == 0 {
-			err := errors.New("missing email or verification code parameter fields")
-			_ = c.Error(response.NewValidationError("Email and Code fields are required", err))
+		if !utils.IsValidEmail(input.Email) {
+			err := errors.New("Invalid email address")
+			_ = c.Error(response.NewValidationError("Email field is required", err))
+			c.Abort()
+			return
+		}
+
+		if len(input.Code) == 0 {
+			err := errors.New("missing verification code parameter field")
+			_ = c.Error(response.NewValidationError("Code field are required", err))
 			c.Abort()
 			return
 		}

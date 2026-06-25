@@ -136,3 +136,75 @@ func (s *AuthService) InitiatePasswordReset(ctx context.Context, email string) e
 
 	return nil
 }
+
+func (s *AuthService) CompletePasswordReset(ctx context.Context, email, secretCode, newPassword, confirmpassword string) error {
+
+	if newPassword != confirmpassword {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Password do not match one another.",
+		}
+	}
+
+	if len(newPassword) < 8 {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Your new password is too short. It must consist of 8 or more characters.",
+		}
+	}
+
+	if !utils.IsValidEmail(email) {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Please provide a valid email address.",
+		}
+	}
+
+	verification, err := s.repo.FetchVerificationDataByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	if verification.Code != secretCode {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "The password reset is failed. Please try again.",
+		}
+	}
+
+	if time.Now().After(verification.ExpireAt) {
+		if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, secretCode, "password_reset", "EXPIRED"); err != nil {
+			log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
+		}
+
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "The password reset token has expired.",
+		}
+	}
+
+	hashedPassword, err := s.HashPassword(newPassword)
+	if err != nil {
+		return &response.AppError{
+			HTTPStatus: http.StatusInternalServerError,
+			Code:       response.CodeInternalError,
+			Message:    "Internal server error.",
+			RawError:   err,
+		}
+	}
+
+	if err := s.repo.UpdateUserPassword(ctx, email, hashedPassword); err != nil {
+		return err
+	}
+
+	if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, secretCode, "password_reset", "SUCCESS"); err != nil {
+		log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
+	}
+
+	return nil
+}
