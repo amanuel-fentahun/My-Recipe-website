@@ -14,6 +14,15 @@ type ForgotPassowrdPayload struct {
 	} `json:"input"`
 }
 
+type ResendCodePayload struct {
+	Input struct {
+		Arg1 struct {
+			Email      string `json:"email"`
+			actionType string
+		} `json:"arg1"`
+	} `json:"input"`
+}
+
 type ResetPasswordPayload struct {
 	Input struct {
 		Inputs struct {
@@ -77,5 +86,25 @@ func PasswordResetHandler(c *gin.Context) {
 
 	response.SendOk(c, gin.H{
 		"message": "Your password is resetted seccussfully.",
+	})
+}
+
+func ResendVerificationCodeHandler(c *gin.Context) {
+	var payload ResendCodePayload
+
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		_ = c.Error(responses.NewValidationError("Invalid email input.", err))
+		return
+	}
+
+	err := authService.InitiateVerificationSend(c.Request.Context(), payload.Input.Arg1.Email, reposite)
+	if err != nil {
+		_ = c.Error(err) // Passes 400 or 429 status configurations directly to your custom middleware
+		return
+	}
+
+	responses.SendOk(c, gin.H{
+		"message": "A new verification code has been dispatched to your email address.",
+		"code":    "SUCCESS",
 	})
 }

@@ -18,6 +18,7 @@ const (
 	CodeInvalidInput      BusinessCode = "BAD_REQUEST"
 	CodeInternalError     BusinessCode = "INTERNAL_SERVER_ERROR"
 	CodeSMTPError         BusinessCode = "SMTP_DELIVERY_FAILED"
+	CodeRateLimitExceeded BusinessCode = "RATE_LIMIT_EXCEEDED"
 	CodeDBError           BusinessCode = "DATABASE_ERROR"
 )
 

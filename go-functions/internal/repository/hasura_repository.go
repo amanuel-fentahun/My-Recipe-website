@@ -50,6 +50,13 @@ const (
 	StatusExpiredCode VerificationStatus = "EXPIRED_CODE_READY"
 )
 
+type VerificationAction string
+
+const (
+	ActionPasswordReset     VerificationAction = "password_reset"
+	ActionEmailVerification VerificationAction = "email_verification"
+)
+
 func (r *HasuraRepository) FetchVerificationDataByEmail(ctx context.Context, email string) (*VerificationData, error) {
 	var query struct {
 		VerificationData `graphql:"VerificationData_by_pk(email: $email)"`

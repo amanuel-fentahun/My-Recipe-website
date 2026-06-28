@@ -84,53 +84,8 @@ func (s *AuthService) CheckPasswordHash(plainPassword, hashPassword string) bool
 
 func (s *AuthService) InitiatePasswordReset(ctx context.Context, email string) error {
 
-	if !utils.IsValidEmail(email) {
-		return &response.AppError{
-			HTTPStatus: http.StatusBadRequest,
-			Code:       response.CodeInvalidInput,
-			Message:    "Please provide a valid email address.",
-		}
-	}
-
-	userExists, err := s.repo.CheckIfUserExists(ctx, email)
-	if err != nil {
+	if err := s.InitiateVerificationSend(ctx, email, string(repository.ActionPasswordReset)); err != nil {
 		return err
-	}
-
-	if !userExists {
-		log.Printf("[SECURITY] Password reset requested for non-existent email: %s", email)
-		return nil
-	}
-
-	status, verificationData, err := s.repo.CheckVerificationState(ctx, email)
-	if err != nil {
-		return err
-	}
-
-	if status == "ACTIVE_CODE_WAIT" {
-		return &response.AppError{
-			HTTPStatus: http.StatusBadRequest,
-			Code:       response.CodeInvalidInput,
-			Message:    "A reset code is already active. Please wait a moment before asking for another.",
-		}
-	}
-
-	if status != "NO_ROW" {
-		if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, verificationData.Code, "password_reset", "EXPIRED"); err != nil {
-			log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
-		}
-	}
-	newCode := utils.GenerateRandomString(6)
-	err = s.repo.InsertVerificationRow(ctx, email, newCode, s.codeTTL, "password_reset")
-	if err != nil {
-		return err
-	}
-
-	subject := utils.SubjectPasswordReset
-	body := utils.GetPasswordResetTemplate(newCode)
-	err = mail.SendEmail(email, subject, body)
-	if err != nil {
-		return response.NewSMTPMailError("we could not send your reset instructions. Please try again later.", err)
 	}
 
 	return nil
@@ -197,9 +152,74 @@ func (s *AuthService) CompletePasswordReset(ctx context.Context, email, secretCo
 		return err
 	}
 
-	if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, secretCode, "password_reset", "SUCCESS"); err != nil {
+	if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, secretCode, string(repository.ActionPasswordReset), "SUCCESS"); err != nil {
 		log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
 	}
 
 	return nil
+}
+
+func (s *AuthService) InitiateVerificationSend(ctx context.Context, email, actionType string) error {
+
+	if !utils.IsValidEmail(email) {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Please provide a valid email address.",
+		}
+	}
+
+	userExists, err := s.repo.CheckIfUserExists(ctx, email)
+
+	if err != nil {
+		return err
+	}
+
+	if !userExists {
+		log.Printf("[SECURITY] Verification Code send requested for non-existent email: %s", email)
+		return nil
+	}
+
+	status, currentData, err := s.repo.CheckVerificationState(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	if status == repository.StatusActiveCode {
+		return &response.AppError{
+			HTTPStatus: http.StatusTooManyRequests,
+			Code:       response.CodeRateLimitExceeded,
+			Message:    "Your code is already active. Please wait a moment before asking for another.",
+		}
+	}
+
+	if status != repository.StatusNoRowExists {
+		if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, currentData.Code, actionType, "EXPIRED"); err != nil {
+			log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
+		}
+	}
+
+	newCode := utils.GenerateRandomString(6)
+
+	err = s.repo.InsertVerificationRow(ctx, email, newCode, s.codeTTL, actionType)
+	if err != nil {
+		return err
+	}
+
+	var subject, body string
+	if actionType == string(repository.ActionPasswordReset) {
+		subject = utils.SubjectPasswordReset
+		body = utils.GetPasswordResetTemplate(newCode)
+	} else {
+		subject = utils.SubjectEmailVerification
+		body = utils.GetEmailVerificationTemplate(newCode)
+	}
+
+	err = mail.SendEmail(email, subject, body)
+	if err != nil {
+		return response.NewSMTPMailError("we could not send your code. Please try again later.", err)
+	}
+
+	return nil
+
 }
