@@ -88,6 +88,7 @@ func ValidateVerificationData() gin.HandlerFunc {
 		c.Set("expired_at", data.ExpireAt)
 		c.Set("incoming_code", input.Code)
 		c.Set("email", data.Email)
+		c.Set("type", data.Type)
 
 		c.Next()
 

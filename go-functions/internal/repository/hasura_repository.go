@@ -158,7 +158,7 @@ func (r *HasuraRepository) InsertVerificationRow(ctx context.Context, email, cod
 	vars := map[string]interface{}{
 		"email":    graphql.String(email),
 		"code":     graphql.String(code),
-		"expireAt": timestamptz(expireAt.Format(time.RFC3339)), // Hasura format requirement
+		"expireAt": timestamptz(expireAt.Format(time.RFC3339)),
 		"type":     graphql.String(actionType),
 	}
 
@@ -220,29 +220,16 @@ func (r *HasuraRepository) UpdateUserPassword(ctx context.Context, email, hashed
 	return nil
 }
 
-func (r *HasuraRepository) DeleteVerificationRow(ctx context.Context, email string) error {
-	var mutation struct {
-		DeleteVerificationData struct {
-			Email string `graphql:"email"`
-		} `graphql:"delete_VerificationData_by_pk(email: $email)"`
-	}
+func (r *HasuraRepository) ArchiveAndPurgeVerificationRow(ctx context.Context, email, code, actionType, status string) error {
 
-	vars := map[string]interface{}{
-		"email": graphql.String(email),
-	}
-
-	if err := r.client.Mutate(ctx, &mutation, vars); err != nil {
-		return response.MapDBError(err)
-	}
-
-	return nil
-}
-
-func (r *HasuraRepository) LogVerificationEvent(ctx context.Context, email, code, actionType, status string) error {
-	var mutation struct {
-		InsertVerificationLogsOne struct {
+	var transactionMutation struct {
+		InsertLogs struct {
 			ID string `graphql:"id"`
 		} `graphql:"insert_VerificationLogs_one(object: {email: $email, code: $code, type: $type, status: $status})"`
+
+		DeleteData struct {
+			Email string `graphql:"email"`
+		} `graphql:"delete_VerificationData_by_pk(email: $email)"`
 	}
 
 	vars := map[string]interface{}{
@@ -252,16 +239,9 @@ func (r *HasuraRepository) LogVerificationEvent(ctx context.Context, email, code
 		"status": graphql.String(status),
 	}
 
-	if err := r.client.Mutate(ctx, &mutation, vars); err != nil {
+	if err := r.client.Mutate(ctx, &transactionMutation, vars); err != nil {
 		return response.MapDBError(err)
 	}
+
 	return nil
-}
-
-func (r *HasuraRepository) ArchiveAndPurgeVerificationRow(ctx context.Context, email, code, actionType, status string) error {
-	if err := r.LogVerificationEvent(ctx, email, code, actionType, status); err != nil {
-		return err
-	}
-
-	return r.DeleteVerificationRow(ctx, email)
 }

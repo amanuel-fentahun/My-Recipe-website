@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	utils "go-functions/Utils"
 	"go-functions/internal/mail"
 	"go-functions/internal/repository"
@@ -103,7 +102,7 @@ func (s *AuthService) InitiatePasswordReset(ctx context.Context, email string) e
 		return nil
 	}
 
-	status, _, err := s.repo.CheckVerificationState(ctx, email)
+	status, verificationData, err := s.repo.CheckVerificationState(ctx, email)
 	if err != nil {
 		return err
 	}
@@ -116,19 +115,19 @@ func (s *AuthService) InitiatePasswordReset(ctx context.Context, email string) e
 		}
 	}
 
+	if status != "NO_ROW" {
+		if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, verificationData.Code, "password_reset", "EXPIRED"); err != nil {
+			log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
+		}
+	}
 	newCode := utils.GenerateRandomString(6)
-	err = s.repo.UpdateOrCreateVerificationRow(ctx, email, newCode, s.codeTTL, "password_reset")
+	err = s.repo.InsertVerificationRow(ctx, email, newCode, s.codeTTL, "password_reset")
 	if err != nil {
 		return err
 	}
 
-	subject := "Password reset code"
-	body := "<p> You need to insert this code in order to keep resetting your password.</p>"
-	body += "<p>Your password reset code:</p>"
-	body += fmt.Sprintf("<h3>%s</h3>", newCode)
-	body += "<p>If you did not request this password reset code, please ignore this email.</p>"
-	body += "<p>Thanks,<br/>The Tafach Kitchen Team</p>"
-
+	subject := utils.SubjectPasswordReset
+	body := utils.GetPasswordResetTemplate(newCode)
 	err = mail.SendEmail(email, subject, body)
 	if err != nil {
 		return response.NewSMTPMailError("we could not send your reset instructions. Please try again later.", err)
@@ -177,10 +176,6 @@ func (s *AuthService) CompletePasswordReset(ctx context.Context, email, secretCo
 	}
 
 	if time.Now().After(verification.ExpireAt) {
-		if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, secretCode, "password_reset", "EXPIRED"); err != nil {
-			log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
-		}
-
 		return &response.AppError{
 			HTTPStatus: http.StatusBadRequest,
 			Code:       response.CodeInvalidInput,
