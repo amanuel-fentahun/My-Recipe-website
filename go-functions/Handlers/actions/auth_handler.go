@@ -18,7 +18,7 @@ type ResendCodePayload struct {
 	Input struct {
 		Arg1 struct {
 			Email      string `json:"email"`
-			actionType string
+			ActionType string `json:"actionType"`
 		} `json:"arg1"`
 	} `json:"input"`
 }
@@ -93,18 +93,18 @@ func ResendVerificationCodeHandler(c *gin.Context) {
 	var payload ResendCodePayload
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		_ = c.Error(responses.NewValidationError("Invalid email input.", err))
+		_ = c.Error(response.NewValidationError("Invalid email input.", err))
 		return
 	}
 
-	err := authService.InitiateVerificationSend(c.Request.Context(), payload.Input.Arg1.Email, reposite)
+	err := authService.InitiateVerificationSend(c.Request.Context(), payload.Input.Arg1.Email, payload.Input.Arg1.ActionType)
 	if err != nil {
-		_ = c.Error(err) // Passes 400 or 429 status configurations directly to your custom middleware
+		_ = c.Error(err)
 		return
 	}
 
-	responses.SendOk(c, gin.H{
-		"message": "A new verification code has been dispatched to your email address.",
-		"code":    "SUCCESS",
+	response.SendOk(c, gin.H{
+		"message": "A new verification code has been send to your email address.",
+		"status":  "SUCCESS",
 	})
 }

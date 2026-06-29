@@ -42,13 +42,14 @@ func SetUpRoutes(router *gin.Engine) {
 		//hasuraProtected.POST("/signup", hasuraactionhandler.SignUpHandler)
 		hasuraProtected.POST("/forgot_password", actionHandler.ForgotPasswordHandler)
 		hasuraProtected.POST("/password_reset", actionHandler.PasswordResetHandler)
+		hasuraProtected.POST("/resend_code", actionHandler.ResendVerificationCodeHandler)
 
 		// (Requires BOTH the Hasura Secret AND the Verification Data checked)
 		verificationGroup := hasuraProtected.Group("")
 		verificationGroup.Use(middlewares.ValidateVerificationData())
 		{
 			verificationGroup.POST("/verify_email", actionHandler.VerifyEmailHandler)
-			// verificationGroup.POST("/verify_pass_reset_code", passresethandler.VerifyPassResetCode)
+			verificationGroup.POST("/verify_resetCode", actionHandler.VerifyResetCode)
 		}
 	}
 

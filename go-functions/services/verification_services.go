@@ -5,6 +5,7 @@ import (
 	"errors"
 	"go-functions/internal/repository"
 	"go-functions/internal/response"
+	"log"
 	"net/http"
 	"time"
 )
@@ -41,8 +42,11 @@ func (s *VerificationService) VerifyEmail(ctx context.Context, email, old_code, 
 	return nil
 }
 
-func (s *VerificationService) SetEmailVerified(ctx context.Context, email string) error {
+func (s *VerificationService) SetEmailVerified(ctx context.Context, code, email string) error {
 
+	if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, code, string(repository.ActionPasswordReset), "SUCCESS"); err != nil {
+		log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
+	}
 	// update the user table isVerified to true
 	if err := s.repo.MarkEmailVerified(ctx, email); err != nil {
 		return err

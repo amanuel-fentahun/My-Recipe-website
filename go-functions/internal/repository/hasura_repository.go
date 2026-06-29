@@ -157,7 +157,7 @@ func (r *HasuraRepository) InsertVerificationRow(ctx context.Context, email, cod
 	var mutation struct {
 		InsertVerificationDataOne struct {
 			Email string `graphql:"email"`
-		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, type: $type})"`
+		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, expireAt: $expireAt, type: $type})"`
 	}
 
 	expireAt := time.Now().Add(window)
@@ -169,30 +169,6 @@ func (r *HasuraRepository) InsertVerificationRow(ctx context.Context, email, cod
 		"type":     graphql.String(actionType),
 	}
 
-	if err := r.client.Mutate(ctx, &mutation, vars); err != nil {
-		return response.MapDBError(err)
-	}
-
-	return nil
-}
-
-func (r *HasuraRepository) UpdateOrCreateVerificationRow(ctx context.Context, email, code string, window time.Duration, actionType string) error {
-	var mutation struct {
-		InsertVerificationDataOne struct {
-			Email string `graphql:"email"`
-		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, expireAt: $expireAt, type: $type}, on_conflict: {constraint: VerificationData_pkey, update_columns: [code, expireAt, type]})"`
-	}
-
-	expireAt := time.Now().Add(window)
-
-	vars := map[string]interface{}{
-		"email":    graphql.String(email),
-		"code":     graphql.String(code),
-		"expireAt": timestamptz(expireAt.Format(time.RFC3339)),
-		"type":     graphql.String(actionType),
-	}
-
-	// This single database action handles both insertions and row overwrites safely
 	if err := r.client.Mutate(ctx, &mutation, vars); err != nil {
 		return response.MapDBError(err)
 	}
