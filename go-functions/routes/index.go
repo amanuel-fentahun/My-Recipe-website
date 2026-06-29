@@ -38,7 +38,7 @@ func SetUpRoutes(router *gin.Engine) {
 	hasuraProtected.Use(middlewares.ValidateIncomingRequest())
 	{
 		// hasuraProtected.POST("/login", hasuraactionhandler.LoginHandler)
-		// hasuraProtected.GET("/upload_signature", cloudinaryhandler.CloudinarySignatureHandler)
+		hasuraProtected.GET("/cloudinary_signature", actionHandler.CloudinarySignatureHandler)
 		//hasuraProtected.POST("/signup", hasuraactionhandler.SignUpHandler)
 		hasuraProtected.POST("/forgot_password", actionHandler.ForgotPasswordHandler)
 		hasuraProtected.POST("/password_reset", actionHandler.PasswordResetHandler)

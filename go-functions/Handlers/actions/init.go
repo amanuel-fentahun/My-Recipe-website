@@ -13,5 +13,6 @@ var (
 		os.Getenv("JWT_SECRET"),
 		os.Getenv("VERIFICATION_CODE_TTL"), // e.g., "15m" or "1h"
 	)
-	verifyService = services.NewVerificationService(HasuraRepo)
+	verifyService     = services.NewVerificationService(HasuraRepo)
+	cloudinaryService = services.NewCloudinaryService()
 )
