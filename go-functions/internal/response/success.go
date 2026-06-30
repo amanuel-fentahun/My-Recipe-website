@@ -17,7 +17,6 @@ func SendOk(c *gin.Context, data interface{}) {
 	if data != nil {
 		switch v := data.(type) {
 		case gin.H:
-			// 🌟 If it's a map, merge the success tracking directly into the root level!
 			v["success"] = true
 			c.JSON(http.StatusOK, v)
 			return
@@ -28,7 +27,6 @@ func SendOk(c *gin.Context, data interface{}) {
 		}
 	}
 
-	// Default fallback to your exact nested structure for traditional slices/structs
 	c.JSON(http.StatusOK, StandardResponse{
 		Success: true,
 		Data:    data,

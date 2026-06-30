@@ -36,6 +36,15 @@ type VerificationData struct {
 	Type     string    `json:"type"`
 }
 
+type UserProfile struct {
+	ID           uuid.UUID `json:"id" graphql:"id"`
+	Email        string    `json:"email" graphql:"email"`
+	Name         string    `json:"name" graphql:"name"`
+	AvatarURL    string    `json:"avatarUrl" graphql:"avatarUrl"`
+	PasswordHash string    `json:"-" graphql:"password"`
+	IsVerified   bool      `json:"isVerified" graphql:"isVerified"`
+	Roles        []string  `json:"roles" graphql:"roles"`
+}
 type VerificationStatus string
 
 type timestamptz string
@@ -81,6 +90,56 @@ func (r *HasuraRepository) FetchVerificationDataByEmail(ctx context.Context, ema
 	}
 
 	return &query.VerificationData, nil
+}
+
+func (r *HasuraRepository) FindUserByEmail(ctx context.Context, email string) (*UserProfile, error) {
+	var query struct {
+		Users []UserProfile `graphql:"Users(where: {email: {_eq: $email}}, limit: 1)"`
+	}
+
+	vars := map[string]interface{}{
+		"email": graphql.String(email),
+	}
+
+	if err := r.client.Query(ctx, &query, vars); err != nil {
+		return nil, response.MapDBError(err)
+	}
+
+	if len(query.Users) == 0 {
+		return nil, nil
+	}
+
+	return &query.Users[0], nil
+}
+
+func (r *HasuraRepository) TransactionalSignUp(ctx context.Context, email, passwordHash, name, avatarURL, verifyCode string, window time.Duration, actionType VerificationAction) error {
+	var mutation struct {
+		InsertUser struct {
+			AffectedRows int `graphql:"affected_rows"`
+		} `graphql:"insert_Users(objects: {email: $email, password: $password, name: $name, avatarUrl: $avatarUrl, roles: [\"user\"]})"` // 🌟 Added fields here
+
+		InsertVerification struct {
+			Email string `graphql:"email"`
+		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, expireAt: $expireAt, type: $type}, on_conflict: {on_constraint: VerificationData_pkey, update_columns: [code, expireAt, type]})"`
+	}
+
+	expireAt := time.Now().Add(window)
+
+	vars := map[string]interface{}{
+		"email":     graphql.String(email),
+		"password":  graphql.String(passwordHash),
+		"name":      graphql.String(name),
+		"avatarUrl": graphql.String(avatarURL),
+		"code":      graphql.String(verifyCode),
+		"type":      graphql.String(actionType),
+		"expireAt":  timestamptz(expireAt.Format(time.RFC3339)),
+	}
+
+	if err := r.client.Mutate(ctx, &mutation, vars); err != nil {
+		return response.MapDBError(err)
+	}
+
+	return nil
 }
 
 func (r *HasuraRepository) MarkEmailVerified(ctx context.Context, email string) error {

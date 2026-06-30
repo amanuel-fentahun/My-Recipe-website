@@ -11,8 +11,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 type CoudinaryService struct {
@@ -27,7 +25,7 @@ func NewCloudinaryService() *CoudinaryService {
 	}
 }
 
-func (s *CoudinaryService) GenerateUploadSignature(folder string) (gin.H, error) {
+func (s *CoudinaryService) GenerateUploadSignature(folder string) (map[string]interface{}, error) {
 	if s.apiKey == "" || s.apiSecret == "" {
 		err := errors.New("missing production cloudinary environment credentials configuration keys")
 		return nil, &response.AppError{
@@ -64,9 +62,11 @@ func (s *CoudinaryService) GenerateUploadSignature(folder string) (gin.H, error)
 	h.Write([]byte(toSign))
 	signature := hex.EncodeToString(h.Sum(nil))
 
-	return gin.H{
+	return map[string]interface{}{
 		"signature": signature,
 		"timestamp": timestamp,
 		"apiKey":    s.apiKey,
+		"folder":    folder,
 	}, nil
+
 }

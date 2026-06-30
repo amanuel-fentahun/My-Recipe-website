@@ -33,5 +33,7 @@ func CloudinarySignatureHandler(c *gin.Context) {
 		return
 	}
 
-	response.SendOk(c, signatureData)
+	response.SendOk(c, gin.H{
+		"data": signatureData,
+	})
 }
