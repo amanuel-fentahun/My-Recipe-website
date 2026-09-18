@@ -29,9 +29,9 @@ services:
       EVENT_SECRET: "my-event-secret"
       HASURA_GRAPHQL_ENDPOINT: "http://graphql-engine:8080/v1/graphql"
       HASURA_ADMIN_SECRET: mystrongsecret
-      CLOUDINARY_CLOUD_NAME: "tafach-kitchen"
-      CLOUDINARY_API_KEY: "482643656233765"
-      CLOUDINARY_API_SECRET: "ENPlIw_l8bUr6_oq5mNgv13eAs8"
+      CLOUDINARY_CLOUD_NAME: ""
+      CLOUDINARY_API_KEY: ""
+      CLOUDINARY_API_SECRET: ""
     depends_on:
       - redis
   
@@ -45,8 +45,8 @@ services:
       - ./go-functions:/app
     environment:
       REDIS_URL: "redis:6379"
-      SMTP_SENDER: "tafachkitchen@gmail.com"
-      SMTP_PASSWORD: "nhes gfdp cngx xvvo"
+      SMTP_SENDER: ""
+      SMTP_PASSWORD: ""
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
     depends_on:
